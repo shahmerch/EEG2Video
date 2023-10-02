@@ -17,25 +17,27 @@ from sklearn import metrics
 from sklearn.cluster import DBSCAN
 from sklearn.metrics import recall_score, precision_score, f1_score, accuracy_score
 from scipy.stats import stats
+from sklearn.decomposition import PCA
+
 
 
 def classOutputs(N,X,y,featureNumber):
     clf = QuadraticDiscriminantAnalysis()
-    ca1finalAcc,ca1finalF1,finalFeatures,finalLength=dualClass(N,clf,X,y,featureNumber)
-    cb1fsAcc,cb1fsF1,finalFeatures,finalLength=fsClass(N,clf,X,y,featureNumber)
+    ca1finalAcc,ca1finalF1,finalFeatures,finalLength,ca1As=dualClass(N,clf,X,y,featureNumber)
+    cb1fsAcc,cb1fsF1,finalFeatures,finalLength,cb1As=fsClass(N,clf,X,y,featureNumber)
 
     clf = GaussianNB()
-    ca2finalAcc,ca2finalF1,finalFeatures,finalLength=dualClass(N,clf,X,y,featureNumber)
-    cb2fsAcc,cb2fsF1,finalFeatures,finalLength=fsClass(N,clf,X,y,featureNumber)
+    ca2finalAcc,ca2finalF1,finalFeatures,finalLength,ca2As=dualClass(N,clf,X,y,featureNumber)
+    cb2fsAcc,cb2fsF1,finalFeatures,finalLength,cb2As=fsClass(N,clf,X,y,featureNumber)
 
     clf = SVC(gamma=2, C=1)
-    ca3finalAcc,ca3finalF1,finalFeatures,finalLength=dualClass(N,clf,X,y,featureNumber)
-    cb3fsAcc,cb3fsF1,finalFeatures,finalLength=fsClass(N,clf,X,y,featureNumber)
+    ca3finalAcc,ca3finalF1,finalFeatures,finalLength,ca3As=dualClass(N,clf,X,y,featureNumber)
+    cb3fsAcc,cb3fsF1,finalFeatures,finalLength,cb3As=fsClass(N,clf,X,y,featureNumber)
 
     clf = KNeighborsClassifier(n_neighbors=3)
-    ca4finalAcc,ca4finalF1,finalFeatures,finalLength=dualClass(N,clf,X,y,featureNumber)
-    cb4fsAcc,cb4fsF1,finalFeatures,finalLength=fsClass(N,clf,X,y,featureNumber)
-    return(ca1finalAcc,ca1finalF1,cb1fsAcc,cb1fsF1,ca2finalAcc,ca2finalF1,cb2fsAcc,cb2fsF1,ca3finalAcc,ca3finalF1,cb3fsAcc,cb3fsF1,ca4finalAcc,ca4finalF1,cb4fsAcc,cb4fsF1)
+    ca4finalAcc,ca4finalF1,finalFeatures,finalLength,ca4As=dualClass(N,clf,X,y,featureNumber)
+    cb4fsAcc,cb4fsF1,finalFeatures,finalLength,cb4As=fsClass(N,clf,X,y,featureNumber)
+    return(ca1finalAcc,ca1finalF1,cb1fsAcc,cb1fsF1,ca2finalAcc,ca2finalF1,cb2fsAcc,cb2fsF1,ca3finalAcc,ca3finalF1,cb3fsAcc,cb3fsF1,ca4finalAcc,ca4finalF1,cb4fsAcc,cb4fsF1,ca1As,ca2As,ca3As,ca4As,cb1As,cb2As,cb3As,cb4As)
 
 def featureSelect(X, y, featureNumber, catToSearch):
     locks1 = np.where(y==catToSearch)
@@ -66,7 +68,21 @@ def dirClass(N,clf,Xa,ya):
     scores = cross_val_score(clf, Xa, ya, cv=N, scoring='f1_macro')
     f1Score=scores.mean()
     f1Std=scores.std()
-    return (avScore,f1Score,avStd,f1Std)
+    scores = cross_val_score(clf, Xa, ya, cv=N, scoring='roc_auc')
+    aucScore=scores.mean()
+    aucStd=scores.std()
+
+    return (avScore,f1Score,avStd,f1Std,aucScore,aucStd)
+
+#from numpy import mean,cov,double,cumsum,dot,linalg,array,rank
+#from pylab import plot,subplot,axis,stem,show,figure
+
+def princomp(A):
+
+    M = (A-mean(A.T,axis=1)).T # subtract the mean (along columns)
+    [latent,coeff] = linalg.eig(cov(M)) # attention:not always sorted
+    score = dot(coeff.T,M) # projection of the data in the new space
+    return coeff,score,latent
 
 
 def dualClass(N,clf,X,y,featureNumber):
@@ -75,22 +91,32 @@ def dualClass(N,clf,X,y,featureNumber):
     nuInd=list()
     nuAv=list()
     nuF1=list()
+    nuAs=list()
+#   features1=np.array([339 340 341 342 160 161 181 182 183 329 336 337 338 718 719 720 184 185 186 203 204 205 190 191 192 193 194 168 169 170 310 164 165 166 217 218 219 168 169 170 404 405 406 189 190 191 203 204 205 155 156 157 409 410 411 201 202 203 343 344 345 165 166 167 303 304 305 188 189 190 195 196 197 161 162 163 342 343 344 100 181 182 239 240 870 165 166 167 293 294 295 325 326 327 328 329 330 168 169 170 287 288 289 168 169 170 133 134 135 168 169 658 659 660 153 154 155 378 379 380 63 64 65 203 204 205 413 414 415 145 146 147 168 169 170 168 169 170 332 333 334 190 191 192 298 299 300 186 202 203 204 344 345 191 192 193 203 204 205 238 239 240 288 289 290 236 237 238 239 240 168 169 170 205 153 154 155 293 294 295 162 163 164 165 166 131 132 133 134 164 165 166 168 169 170 168 169 170 709 778 779 168 169 170 232 233 234 378 379 380 605 606 607 98 99 100 181 182 183 9 10 11 308 309 310 98 99 100])
+
+    f2=np.array([9, 10, 11, 63, 64, 65, 98, 99, 100, 131, 132, 133, 134, 135, 145, 146, 147, 153, 154, 155, 156, 157, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 181, 182, 183, 184, 185, 186, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 201, 202, 203, 204, 205, 217, 218, 219, 232, 233, 234, 236, 237, 238, 239, 240, 287, 288, 289, 290, 293, 294, 295, 298, 299, 300, 303, 304, 305, 308, 309, 310, 325, 326, 327, 328, 329, 330, 332, 333, 334, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 378, 379, 380, 404, 405, 406, 409, 410, 411, 413, 414, 415, 605, 606, 607, 658, 659, 660, 709, 718, 719, 720, 778, 779, 870])
     for ii in runCats:
 
         aFeatures,totalLength,X1,X2=featureSelect(X, y, featureNumber, ii)
         Xa,ya=speedClass(X1, X2)
-        avScore,f1Score,avStd,f1Std=dirClass(N,clf,Xa,ya)
+        Xa = np.squeeze(Xa[:,f2])
+        #pcaData = PCA(n_components=3)
+        #Xa = pcaData.fit_transform(Xa)
+#princomp(X)
+        avScore,f1Score,avStd,f1Std,aucScore,aucStd=dirClass(N,clf,Xa,ya)
 
         nuNu.append(aFeatures)
         nuInd.append(totalLength)
         nuAv.append(avScore)
         nuF1.append(f1Score)
+        nuAs.append(aucScore)
 
     finalFeatures=np.asarray(nuNu,dtype=object)
     finalLength=np.asarray(totalLength)
     finalAcc=np.mean(np.asarray(nuAv))
     finalF1=np.mean(np.asarray(nuF1))
-    return(finalAcc,finalF1,finalFeatures,finalLength)
+    finalAs=np.mean(np.asarray(nuAs))
+    return(finalAcc,finalF1,finalFeatures,finalLength,finalAs)
 
 
 def fsClass(N,clf,X,y,featureNumber):
@@ -99,24 +125,27 @@ def fsClass(N,clf,X,y,featureNumber):
     nuInd=list()
     nuAv=list()
     nuF1=list()
+    nuAs=list()
     for ii in runCats:
   
         aFeatures,totalLength,X1,X2=featureSelect(X, y, featureNumber, ii)
 
         Xa,ya=speedClass(X1, X2)
         Xa=np.squeeze(Xa[:,aFeatures])
-        avScore,f1Score,avStd,f1Std=dirClass(N,clf,Xa,ya)
+        avScore,f1Score,avStd,f1Std,aucScore,aucStd=dirClass(N,clf,Xa,ya)
 
         nuNu.append(aFeatures)
         nuInd.append(totalLength)
         nuAv.append(avScore)
         nuF1.append(f1Score)
+        nuAs.append(aucScore)
 
     finalFeatures=np.asarray(nuNu,dtype=object)
     finalLength=np.asarray(totalLength)
     finalAcc=np.mean(np.asarray(nuAv))
     finalF1=np.mean(np.asarray(nuF1))
-    return(finalAcc,finalF1,finalFeatures,finalLength)
+    finalAs=np.mean(np.asarray(nuAs))
+    return(finalAcc,finalF1,finalFeatures,finalLength,finalAs)
 
 def pairLoader(subName):
 
