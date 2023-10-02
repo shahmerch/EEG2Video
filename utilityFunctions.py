@@ -19,7 +19,23 @@ from sklearn.metrics import recall_score, precision_score, f1_score, accuracy_sc
 from scipy.stats import stats
 from sklearn.decomposition import PCA
 
+def fastClassOutputs(N,X,y,featureNumber):
+    clf = QuadraticDiscriminantAnalysis()
+    ca1finalAcc,ca1finalF1,finalFeatures,finalLength,ca1As=dualClass(N,clf,X,y,featureNumber)
+    #cb1fsAcc,cb1fsF1,finalFeatures,finalLength,cb1As=fsClass(N,clf,X,y,featureNumber)
 
+    clf = GaussianNB()
+    #ca2finalAcc,ca2finalF1,finalFeatures,finalLength,ca2As=dualClass(N,clf,X,y,featureNumber)
+    #cb2fsAcc,cb2fsF1,finalFeatures,finalLength,cb2As=fsClass(N,clf,X,y,featureNumber)
+
+    clf = SVC(gamma=2, C=1)
+    ca3finalAcc,ca3finalF1,finalFeatures,finalLength,ca3As=dualClass(N,clf,X,y,featureNumber)
+    #cb3fsAcc,cb3fsF1,finalFeatures,finalLength,cb3As=fsClass(N,clf,X,y,featureNumber)
+
+    clf = KNeighborsClassifier(n_neighbors=3)
+    ca4finalAcc,ca4finalF1,finalFeatures,finalLength,ca4As=dualClass(N,clf,X,y,featureNumber)
+    #cb4fsAcc,cb4fsF1,finalFeatures,finalLength,cb4As=fsClass(N,clf,X,y,featureNumber)
+    return(ca1finalAcc,ca1finalF1,ca1As,ca3finalAcc,ca3finalF1,ca3As,ca4finalAcc,ca4finalF1,ca4As)
 
 def classOutputs(N,X,y,featureNumber):
     clf = QuadraticDiscriminantAnalysis()
