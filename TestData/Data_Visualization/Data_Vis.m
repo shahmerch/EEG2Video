@@ -1,14 +1,15 @@
 clc
 clear
 close all
-%{
+
 i=0;
 for k=0:43 %If program has an error when running through check the file size to see if that data is corrupt
     %Then adjust accordingly.
     i=k;
     % Cole Data Path
-    %data=load('C:\Users\dchel\OneDrive\Documents\GitHub\GhostTalker\TestData\Sam_Tests\3-7-23\SL_7_1.txt');
-    data=load('C:\Users\Cole\Documents\GitHub\GhostTalker\TestData\Sam_Tests\3-8-23\SL_' + string(i) +'_1.txt');
+    data=load('/Users/shahilmerchant/ghostTalkerAlpha/StimPres/GT007_'+ string(i) +'_3.txt')
+    data=load('C:\Users\dchel\OneDrive\Documents\GitHub\GhostTalker\TestData\Sam_Tests\3-7-23\SL_7_1.txt');
+    %%data=load('C:\Users\Cole\Documents\GitHub\GhostTalker\TestData\Sam_Tests\3-8-23\SL_' + string(i) +'_1.txt');
     % Sam Data Path
     %data=load('\\coeit.osu.edu\home\l\lecian.1\Documents\Capstone\Sam_Tests\3-7-23\SL_'+string(i)+'_1.txt');
     %data=load('C:\GitHub\GhostTalker\TestData\Sam_Tests\3-7-23\SL_'+string(i)+'_1.txt');
@@ -68,17 +69,17 @@ for k=0:43 %If program has an error when running through check the file size to 
     end
 end
 %}
-data=load('C:\Users\dchel\OneDrive\Documents\GitHub\GhostTalker\TestData\DLR_Tests\3-21-2023\DLR_6_2.txt');
-fs=250;
-N = length(data);
-figure;
-hold on
-for j=2:17
-    current_channel_welch = data(:,j);
-    hpc = highpass(current_channel_welch,0.5,250);
-    [pxx,f] = pwelch(hpc, 500, 250, 500, fs);
-    plot(f,10*log10(pxx))
-    title("Pwelch for John LaRocco Phoneme "+ "6" +" Trial 2 Day 1")
-    xlabel("Frequency (Hz)")
-    ylabel("Power/Frequency (dB/Hz)")
-end
+% data=load('C:\Users\dchel\OneDrive\Documents\GitHub\GhostTalker\TestData\DLR_Tests\3-21-2023\DLR_6_2.txt');
+% fs=250;
+% N = length(data);
+% figure;
+% hold on
+% for j=2:17
+%     current_channel_welch = data(:,j);
+%     hpc = highpass(current_channel_welch,0.5,250);
+%     [pxx,f] = pwelch(hpc, 500, 250, 500, fs);
+%     plot(f,10*log10(pxx))
+%     title("Pwelch for John LaRocco Phoneme "+ "6" +" Trial 2 Day 1")
+%     xlabel("Frequency (Hz)")
+%     ylabel("Power/Frequency (dB/Hz)")
+% end

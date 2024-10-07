@@ -25,7 +25,7 @@ board.config_board("~6")
 # Check board mode, change to Marker mode
 board.config_board("//")
 board.config_board("/4")
-
+#headset and everything that comes with headset physcial are constraints
 
 for i in range(1,9):
     board.config_board("x" + str(i) + "000000X")
@@ -154,8 +154,7 @@ full_path = os.path.join(absolute_path, relative_path)
 #os.start("name" + full_path) # Potential Correct MAC Start
 
 # PC OS Start
-os.startfile(full_path)
-
+os.system('open %s' % full_path)
 time.sleep(2)
 
 # Sets the powerpoint to fullscreen
