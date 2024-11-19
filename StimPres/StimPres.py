@@ -9,38 +9,38 @@ from brainflow.data_filter import DataFilter
 from playsound import playsound
 
 
-BoardShim.enable_dev_board_logger()
+# BoardShim.enable_dev_board_logger()
 
-params = BrainFlowInputParams()
-params.ip_port = 6789
-params.ip_address = "192.168.4.1"
-board = BoardShim(BoardIds.CYTON_DAISY_WIFI_BOARD, params)
+# params = BrainFlowInputParams()
+# params.ip_port = 6789
+# params.ip_address = "192.168.4.1"
+# board = BoardShim(BoardIds.CYTON_DAISY_WIFI_BOARD, params)
 
-board.prepare_session()
+# board.prepare_session()
 
-# Check sample rate, change to 250 Hz
-board.config_board("~~")
-board.config_board("~6")
+# # Check sample rate, change to 250 Hz
+# board.config_board("~~")
+# board.config_board("~6")
 
-# Check board mode, change to Marker mode
-board.config_board("//")
-board.config_board("/4")
-#headset and everything that comes with headset physcial are constraints
+# # Check board mode, change to Marker mode
+# board.config_board("//")
+# board.config_board("/4")
+# #headset and everything that comes with headset physcial are constraints
 
-for i in range(1,9):
-    board.config_board("x" + str(i) + "000000X")
+# for i in range(1,9):
+#     board.config_board("x" + str(i) + "000000X")
 
-daisy_channels = "QWERTYUI"
+# daisy_channels = "QWERTYUI"
 
-for i in range(0,8):
-    board.config_board("x" + daisy_channels[i] + "000000X")
+# for i in range(0,8):
+#     board.config_board("x" + daisy_channels[i] + "000000X")
 
 num_tests = 88; # 2 blocks for 44 phonemes
 wait_slide = '47' # slide number of wait slide
 begin_test_slide = '2' # slide number of begin test slide
 
 
-# Corresponds to slides 3-4647
+# # Corresponds to slides 3-4647
 
 slides =[
     ['i_colon', 2],
@@ -172,28 +172,24 @@ time.sleep(7)
 # slides_place is the index in the slides of the phoneme being tested
 def one_block(slides_place):
     # phoneme slides with audio begin at slide 3
-    current_audio_slide = slides_place + 3
-    str_current_audio_slide = str(current_audio_slide)
+    current_stimulus_slide = slides_place + 3
+    str_current_stimulus_slide = str(current_stimulus_slide)
 
     #phoneme slides without audio begin at slide 48
     current_slide = slides_place + 48
     str_current_slide = str(current_slide)
 
-    #audio file path
-    audio_path = 'slide' + str(current_audio_slide) + '.mp3'
-    full_audio_path = os.path.join(absolute_path, audio_path)
-
+  
     # keypress for the slide number, if slide number has two digits press the digit in the ones place
-    pyautogui.press(str_current_audio_slide[0])
-    if(current_audio_slide >= 10):
-        pyautogui.press(str_current_audio_slide[1])
+    pyautogui.press(str_current_stimulus_slide[0])
+    if(current_stimulus_slide >= 10):
+        pyautogui.press(str_current_stimulus_slide[1])
     pyautogui.press('enter') 
 
-    playsound(full_audio_path)
     
     time.sleep(2)
     
-    board.start_stream()
+    # board.start_stream()
     # repeat test procedure 5 times
     # Test Procedure Change from 6 to 31
     for i in range(1,6):

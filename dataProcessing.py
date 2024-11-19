@@ -5,7 +5,8 @@ import numpy as np
 import scipy as sp
 import pandas as pd
 
-from scipy import signal, arange, fft, fromstring, roll
+from numpy import arange
+from scipy import signal, fft, fromstring, roll
 from scipy.signal import butter, lfilter, ricker
 import os
 import glob
@@ -41,48 +42,48 @@ dirSub='./StimPres/gtData/'+subName +'/'
 
 
 for phoNum in range(0,phoLimit):
-    for triNum in range(triMin,triLimit):
-        if subName=='GTP000':
-        	nameFile=dirSub+'DLR' + '_' + str(int(phoNum)) + '_' + str(int(triNum)) + '.txt'
-        else:
-        	nameFile=dirSub+subName + '_' + str(int(phoNum)) + '_' + str(int(triNum)) + '.txt'
+  for triNum in range(triMin,triLimit):
+    if subName=='GTP000':
+      nameFile=dirSub+'DLR' + '_' + str(int(phoNum)) + '_' + str(int(triNum)) + '.txt'
+    else:
+      nameFile=dirSub+subName + '_' + str(int(phoNum)) + '_' + str(int(triNum)) + '.txt'
 
-        if subName=='GTP007':
-        	nameFile=dirSub+'GT007' + '_' + str(int(phoNum)) + '_' + str(int(triNum)) + '.txt'
-        else:
-        	nameFile=dirSub+subName + '_' + str(int(phoNum)) + '_' + str(int(triNum)) + '.txt'
-        print(nameFile)
+    if subName=='GTP007':
+      nameFile=dirSub+'GT007' + '_' + str(int(phoNum)) + '_' + str(int(triNum)) + '.txt'
+    else:
+      nameFile=dirSub+subName + '_' + str(int(phoNum)) + '_' + str(int(triNum)) + '.txt'
+    print(nameFile)
 #rawData = np.genfromtxt(nameFile, delimiter='/t')
 
 
 
        # print(totalL)
-        try:
-        	df = pd.read_csv(nameFile, sep='\t', header=None)
-        	rawData=df.to_numpy()
-        	lastRow=np.squeeze(rawData[:,31])
-        	h0=np.unique(lastRow)
-        	totalL=np.shape(h0)[0]
-        	totalL=int(totalL)
-        	for aa in range(1,totalL):
-        		indVal=np.where(lastRow==(aa))
-        		featureVector=ghostHeap(rawData, indVal, fs, lowcut, highcut, pcti, NUM_WINDOWS)
-        		print(aa)
-        		featureList.append(featureVector)
-        		featureVector=list()
-        		phonemeList.append(str(phoNum))
-        except:
-        	print('No epochs.')
-      #  h1=np.where(lastRow==1)
-      #  h2=np.where(lastRow==2)
-      #  h3=np.where(lastRow==3)
-      #  h4=np.where(lastRow==4)
-      #  h5=np.where(lastRow==5)
+    try:
+      df = pd.read_csv(nameFile, sep='\t', header=None)
+      rawData=df.to_numpy()
+      lastRow=np.squeeze(rawData[:,31])
+      h0=np.unique(lastRow)
+      totalL=np.shape(h0)[0]
+      totalL=int(totalL)
+      for aa in range(1,totalL):
+        indVal=np.where(lastRow==(aa))
+        featureVector=ghostHeap(rawData, indVal, fs, lowcut, highcut, pcti, NUM_WINDOWS)
+        print(aa)
+        featureList.append(featureVector)
+        featureVector=list()
+        phonemeList.append(str(phoNum))
+    except:
+      print('No epochs.')
+    #  h1=np.where(lastRow==1)
+    #  h2=np.where(lastRow==2)
+    #  h3=np.where(lastRow==3)
+    #  h4=np.where(lastRow==4)
+    #  h5=np.where(lastRow==5)
 
-     #   featureVector=ghostVector(rawData, fs, lowcut, highcut, pcti, h1, h2, h3, h4, h5, NUM_WINDOWS)
-     #   featureList.append(featureVector)
-     #   phonemeList.append(str(phoNum))
-       # print(np.shape(featureVector))
+    #   featureVector=ghostVector(rawData, fs, lowcut, highcut, pcti, h1, h2, h3, h4, h5, NUM_WINDOWS)
+    #   featureList.append(featureVector)
+    #   phonemeList.append(str(phoNum))
+      # print(np.shape(featureVector))
 
 
 

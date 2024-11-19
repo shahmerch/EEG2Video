@@ -54,9 +54,9 @@ while z==int(3):
 	rawData=float(random.randint(0,43))*np.random.random((fs,activeChannels))
 
 f1=rawData
-	print(np.shape(rawData))
+print(np.shape(rawData))
 
-	f1a=featureExtraction(rawData[0,:], fs, lowcut, highcut, pcti)
+f1a=featureExtraction(rawData[0,:], fs, lowcut, highcut, pcti)
 f1b=featureExtraction(rawData[1,:], fs, lowcut, highcut, pcti)
 f1c=featureExtraction(rawData[2,:], fs, lowcut, highcut, pcti)
 f1d=featureExtraction(rawData[3,:], fs, lowcut, highcut, pcti)
@@ -66,20 +66,20 @@ f1f=featureExtraction(rawData[6,:], fs, lowcut, highcut, pcti)
 
 
 f1=np.concatenate((f1a,f1b),axis=0)
-	print(np.shape(data))
+print(np.shape(data))
 
 # Generate output integer. This simulates the EEG BCI classifier output. 
 #	n=int(round(model.predict(data)))
-	n = random.randint(0,43)
+n = random.randint(0,43)
 # Print integer. 
-	print(n)
+print(n)
 # Add offset (NOT required in final system). 
-	updatedInteger=int(n+z)
+updatedInteger=int(n+z)
 
 # Generate file name from updated index. 
-	audio_path = 'slide' + str(updatedInteger) + '.mp3'
-	full_audio_path = os.path.join(absolute_path, audio_path)
+audio_path = 'slide' + str(updatedInteger) + '.mp3'
+full_audio_path = os.path.join(absolute_path, audio_path)
 # Play the appropriate sound.
-	#playsound(full_audio_path)
+#playsound(full_audio_path)
 # Delay for the next loop iteration. 
-	time.sleep(refreshrate)
+time.sleep(refreshrate)

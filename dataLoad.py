@@ -31,7 +31,6 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neural_network import MLPClassifier
 
-
 # Set parameters
 print('Setting parameters...')
 fs = 200  # features per second (Hz)
