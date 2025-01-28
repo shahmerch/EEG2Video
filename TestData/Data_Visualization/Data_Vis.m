@@ -7,7 +7,7 @@ for k=0:43 %If program has an error when running through check the file size to 
     %Then adjust accordingly.
     i=k;
     % Cole Data Path
-    data=load('/Users/shahilmerchant/ghostTalkerAlpha/StimPres/GT007_'+ string(i) +'_3.txt')
+    data=load('/Users/shahilmerchant/ghostTalkerAlpha/StimPres/SM001_'+ string(i) +'_3.txt')
     %data=load('C:\Users\dchel\OneDrive\Documents\GitHub\GhostTalker\TestData\Sam_Tests\3-7-23\SL_7_1.txt');
     %%data=load('C:\Users\Cole\Documents\GitHub\GhostTalker\TestData\Sam_Tests\3-8-23\SL_' + string(i) +'_1.txt');
     % Sam Data Path
@@ -63,7 +63,7 @@ for k=0:43 %If program has an error when running through check the file size to 
         [pxx_background, u] = pwelch(hpc_background,500, 250, 500, fs);
         pxx = pxx - pxx_background;
         plot(f,10*log10(pxx))
-        title("Pwelch Using FFT for Shahil Merchant Phoneme "+string(i)+" Trial 1")
+        title("Pwelch Using FFT for Ye Lin Image "+ string(i+1)  +" Trial 1")
         xlabel("Frequency (Hz)")
         ylabel("Power/Frequency (dB/Hz)")
     end
