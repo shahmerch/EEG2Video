@@ -1,20 +1,3 @@
-"""
-bandpower_classification_4trials_gui.py
-
-Real-time (or simulated) classification script that can load a model trained
-with either HybridRandomClassifier or HashedRandomClassifier, etc.
-
-We define those classes here so unpickling works.
-
-We also introduce a new parameter: RANDOMNESS_PARAM in [0..1],
-which controls how random the simulated sub-trial input is:
- - 0.0 => fully deterministic (same exact input wave every time)
- - 1.0 => fully random like before
- - 0.5 => half deterministic, half random blend
-
-Now includes a real-time plot of all 16 EEG channels in non-simulator mode.
-"""
-
 import time
 import os
 import numpy as np
@@ -29,7 +12,9 @@ from PIL import Image, ImageTk
 # ----------------------
 # CONFIG
 # ----------------------
-SIMULATOR_MODE = False           # If True, we simulate sub-trials; If False, connect to board
+#conda config --env --set subdir osx-64 
+
+SIMULATOR_MODE = True           # If True, we simulate sub-trials; If False, connect to board
 USE_IMAGES = True
 
 MODEL_PATH = "eeg_image_classifier.joblib"
@@ -227,38 +212,80 @@ def get_features(eeg_chunk):
     else:
         return np.concatenate(feat_list)
 
+# Global variables to hold the simulation data and current index
+SIM_DATA = None
+SIM_INDEX = 0
+
+def load_sim_data():
+    global SIM_DATA, SIM_INDEX
+    try:
+        SIM_DATA = np.loadtxt("SM001_10_3.txt")
+        SIM_INDEX = 0
+        print("[INFO] Loaded simulation data from sm001_1_3.txt with shape:", SIM_DATA.shape)
+    except Exception as e:
+        print(f"[ERROR] Could not load simulation data: {e}")
+        SIM_DATA = None
+
 def generate_subtrial_sim():
     """
-    produce a 16x256 sub-trial blending a fixed base wave with random draws,
-    scaled by RANDOMNESS_PARAM (0..1).
+    Instead of generating a random EEG subtrial, this version reads from the file
+    'sm001_1_3.txt'. We assume:
+      - Each row in the file is one sample.
+      - Column 0 is time, and columns 1 to 16 (inclusive) are EEG channels.
+    We read SUBTRIAL_SAMPLES rows, then transpose the data to match shape
+    (NUM_CHANNELS, SUBTRIAL_SAMPLES).
     """
-    arr = np.zeros((NUM_CHANNELS, SUBTRIAL_SAMPLES), dtype=float)
-    t = np.arange(SUBTRIAL_SAMPLES)/SAMPLE_RATE
+    global SIM_DATA, SIM_INDEX
+    if SIM_DATA is None:
+        load_sim_data()
+        if SIM_DATA is None:
+            # In case of failure, return a zero array
+            return np.zeros((NUM_CHANNELS, SUBTRIAL_SAMPLES), dtype=float)
+            
+    total_samples = SIM_DATA.shape[0]
+    # If there are not enough samples left, wrap around to the start
+    if SIM_INDEX + SUBTRIAL_SAMPLES > total_samples:
+        SIM_INDEX = 0
+    # Extract rows for one subtrial and select EEG channels (columns 1 to 16)
+    subtrial = SIM_DATA[SIM_INDEX:SIM_INDEX+SUBTRIAL_SAMPLES, 1:1+NUM_CHANNELS]
+    SIM_INDEX += SUBTRIAL_SAMPLES
+    # Transpose so that the shape becomes (NUM_CHANNELS, SUBTRIAL_SAMPLES)
+    subtrial = subtrial.T
+    return subtrial
 
-    # Base wave for each channel
-    for ch in range(NUM_CHANNELS):
-        base_freq = 5.0 + ch
-        base_amp  = 1.0e4
-        base_phase= 0.0
 
-        # random freq, amp, phase
-        rand_freq  = np.random.uniform(2,45)
-        rand_amp   = np.random.uniform(8e3,1.2e4)
-        rand_phase = 2.0*np.pi*np.random.rand()
+# def generate_subtrial_sim():
+#     """
+#     produce a 16x256 sub-trial blending a fixed base wave with random draws,
+#     scaled by RANDOMNESS_PARAM (0..1).
+#     """
+#     arr = np.zeros((NUM_CHANNELS, SUBTRIAL_SAMPLES), dtype=float)
+#     t = np.arange(SUBTRIAL_SAMPLES)/SAMPLE_RATE
 
-        # blend freq, amp, phase
-        freq  = base_freq*(1-RANDOMNESS_PARAM) + rand_freq*(RANDOMNESS_PARAM)
-        amp   = base_amp*(1-RANDOMNESS_PARAM) + rand_amp*(RANDOMNESS_PARAM)
-        phase = base_phase*(1-RANDOMNESS_PARAM) + rand_phase*(RANDOMNESS_PARAM)
+#     # Base wave for each channel
+#     for ch in range(NUM_CHANNELS):
+#         base_freq = 5.0 + ch
+#         base_amp  = 1.0e4
+#         base_phase= 0.0
 
-        # add noise scaled by randomness
-        noise_scale = amp*0.2*RANDOMNESS_PARAM
+#         # random freq, amp, phase
+#         rand_freq  = np.random.uniform(2,45)
+#         rand_amp   = np.random.uniform(8e3,1.2e4)
+#         rand_phase = 2.0*np.pi*np.random.rand()
 
-        wave = amp * np.sin(2*np.pi*freq*t + phase)
-        noise= np.random.normal(0, noise_scale, SUBTRIAL_SAMPLES)
-        arr[ch,:] = wave + noise
+#         # blend freq, amp, phase
+#         freq  = base_freq*(1-RANDOMNESS_PARAM) + rand_freq*(RANDOMNESS_PARAM)
+#         amp   = base_amp*(1-RANDOMNESS_PARAM) + rand_amp*(RANDOMNESS_PARAM)
+#         phase = base_phase*(1-RANDOMNESS_PARAM) + rand_phase*(RANDOMNESS_PARAM)
 
-    return arr
+#         # add noise scaled by randomness
+#         noise_scale = amp*0.2*RANDOMNESS_PARAM
+
+#         wave = amp * np.sin(2*np.pi*freq*t + phase)
+#         noise= np.random.normal(0, noise_scale, SUBTRIAL_SAMPLES)
+#         arr[ch,:] = wave + noise
+
+#     return arr
 
 class RealTimeClassifierApp:
     def __init__(self, master, model, scaler, class_labels, class_images, board, eeg_channels):

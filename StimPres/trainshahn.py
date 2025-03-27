@@ -17,13 +17,10 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_X_y, check_is_fitted, check_array
 # ============= FLAGS & CONFIG =============
 
-# If True, we skip real training & produce a basic random model (DummyClassifier).
-# (You could also adapt this to produce "HashedRandomClassifier" if you want.)
+
 TRAIN_MODE_RANDOM_ONLY = False
-
 TRY_ALL_MODELS = False            # If True, tries multiple classifiers
-SINGLE_MODEL =    ("HYBRID_RANDOM", {"alpha":1.0, "stable":True})
-
+SINGLE_MODEL =    ("MLP", {"hidden_layer_sizes":(128,64), "max_iter":10000, "alpha":1e-10})
 ADD_RANDOM_GUESS_CLASSIFIER = True
 
 # We'll also add "HASHED_RANDOM" to param sets below
@@ -50,8 +47,8 @@ FILE_LABELS = [
     ("SM001_10_3.txt", 10),
     ("SM001_11_3.txt", 11),
 ]
-NUM_CLASSES = 12
 
+NUM_CLASSES = 12
 NUM_CHANNELS = 16
 SAMPLE_RATE = 250
 SUBTRIAL_SAMPLES = 250
@@ -83,10 +80,10 @@ if ADD_RANDOM_GUESS_CLASSIFIER:
     CLASSIFIER_PARAM_SETS.append(("DUMMY", {"strategy": "stratified"}))
 
 # Add the hashed random approach:
-CLASSIFIER_PARAM_SETS.append(("HASHED_RANDOM", {"n_classes": 12, "stable": True}))
+CLASSIFIER_PARAM_SETS.append(("HASHED_RANDOM", {"n_classes": NUM_CLASSES, "stable": True}))
 
 class HybridRandomClassifier(BaseEstimator, ClassifierMixin):
-    def __init__(self, base_estimator=None, alpha=0.5, n_classes=12, stable=True):
+    def __init__(self, base_estimator=None, alpha=0.5, n_classes=NUM_CLASSES, stable=True):
         self.base_estimator = base_estimator
         self.alpha = alpha
         self.n_classes = n_classes
@@ -166,7 +163,7 @@ class HashedRandomClassifier(BaseEstimator, ClassifierMixin):
     - stable: if True, same input => same seed => same probability distribution
               if False, we add ephemeral randomness, so it changes each call
     """
-    def __init__(self, n_classes=12, stable=True):
+    def __init__(self, n_classes=NUM_CLASSES, stable=True):
         self.n_classes = n_classes
         self.stable = stable
 
@@ -421,7 +418,7 @@ def create_classifier(name, params):
         return HybridRandomClassifier(
             base_estimator=base_est,
             alpha=alpha,
-            n_classes=12,  # or however many classes
+            n_classes=NUM_CLASSES,  # or however many classes
             stable=stable
     )
 
@@ -455,7 +452,7 @@ def create_classifier(name, params):
 
     elif name=="HASHED_RANDOM":
         # parse out 'n_classes' or 'stable'
-        n_classes = params.get("n_classes", 12)
+        n_classes = params.get("n_classes", NUM_CLASSES)
         stable = params.get("stable", True)
         clf = HashedRandomClassifier(n_classes=n_classes, stable=stable)
         return clf
@@ -474,8 +471,8 @@ def main():
             print("[INFO] TRAIN_MODE_RANDOM_ONLY=True => Creating a purely random (uniform) model ignoring data.")
             
             # We'll produce the dummy with correct # classes => 12
-            X_fake = np.zeros((12,64))  # 12 rows, 64 features
-            y_fake = np.arange(12)      # 0..11
+            X_fake = np.zeros((NUM_CLASSES,64))  # 12 rows, 64 features
+            y_fake = np.arange(NUM_CLASSES)      # 0..11
             random_model = DummyClassifier(strategy="uniform", random_state=None)
             random_model.fit(X_fake, y_fake)
             joblib.dump(random_model, "eeg_image_classifier.joblib")
