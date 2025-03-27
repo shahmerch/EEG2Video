@@ -219,7 +219,7 @@ SIM_INDEX = 0
 def load_sim_data():
     global SIM_DATA, SIM_INDEX
     try:
-        SIM_DATA = np.loadtxt("SM001_10_3.txt")
+        SIM_DATA = np.loadtxt("SM001_0_3.txt")
         SIM_INDEX = 0
         print("[INFO] Loaded simulation data from sm001_1_3.txt with shape:", SIM_DATA.shape)
     except Exception as e:
