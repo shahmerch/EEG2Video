@@ -97,10 +97,10 @@ relative_path = "stimulus.pptx"
 full_path = os.path.join(absolute_path, relative_path)
 
 #Mac OS Start
-os.system("open " + full_path)
+#os.start("name" + full_path) # Potential Correct MAC Start
 
 # PC OS Start
-#os.startfile(full_path)
+os.startfile(full_path)
 
 keyboard.wait('x')
 
