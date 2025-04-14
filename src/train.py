@@ -25,7 +25,7 @@ ADD_RANDOM_GUESS_CLASSIFIER = True
 USE_BANDPOWER_FEATURES = True
 USE_RAW_FLATTENING = False
 N_AUG = 10
-OVERSAMPLE_FACTOR = 2
+OVERSAMPLE_FACTOR = 4
 MAX_ATTEMPTS = 40
 BIAS_THRESHOLD = 0.05
 
@@ -400,7 +400,7 @@ def main():
         allX = []
         allY = []
         # New base folder with all trial subdirectories
-        base_folder = "./All Nos"
+        base_folder = "./smo1"
         if not os.path.isdir(base_folder):
             print(f"[ERROR] The folder '{base_folder}' does not exist. Exiting.")
             return

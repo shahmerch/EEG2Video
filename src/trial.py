@@ -3,6 +3,7 @@ import os
 import numpy as np
 import joblib
 import tkinter as tk
+
 from tkinter import Label
 import matplotlib
 matplotlib.use("TkAgg")
@@ -13,7 +14,7 @@ from PIL import Image, ImageTk
 
 # ----------------------
 # CONFIG
-SIMULATOR_MODE = True           # If True, simulate sub-trials; if False, connect to board
+SIMULATOR_MODE = False           # If True, simulate sub-trials; if False, connect to board
 SIM_FILE = "./All Nos/Nos000/Nos000_7_3.txt"
 USE_IMAGES = True
 
@@ -46,6 +47,9 @@ BANDS = {
     "alpha": (8, 13),
     "beta":  (13, 30)
 }
+
+SAVE_PROBABILITIES = False  # Set to True to save probabilities to file
+PROBABILITY_FILE = "probabilities.txt"
 
 # ------------------ CUSTOM CLASSIFIERS (for loading models) ------------------
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -233,6 +237,26 @@ class RealTimeClassifierApp:
         self.eeg_channels = eeg_channels
         self.num_classes = len(class_labels)
         self.subtrials = []
+        self.running = True  # Add running flag
+        self.show_eeg = False  # Flag to control EEG display
+        
+        # Create control buttons frame
+        self.control_frame = tk.Frame(master)
+        self.control_frame.pack(side=tk.BOTTOM, fill=tk.X)
+        
+        # Create stop button
+        self.stop_button = tk.Button(self.control_frame, text="Stop", command=self.stop)
+        self.stop_button.pack(side=tk.RIGHT, padx=5)
+        
+        # Create EEG display toggle button
+        self.eeg_toggle = tk.Button(self.control_frame, text="Show EEG", command=self.toggle_eeg_display)
+        self.eeg_toggle.pack(side=tk.RIGHT, padx=5)
+        
+        # Initialize probability file if needed
+        if SAVE_PROBABILITIES:
+            self.prob_file = open(PROBABILITY_FILE, 'w')
+            self.prob_file.write("Time," + ",".join(class_labels) + "\n")
+        
         self.master.title("Band-Power EEG Classifier (Group=4) - RealTime")
         # Load class images both as PhotoImages (for the predicted image) and as NumPy arrays for the image bars:
         self.class_photo_images = []
@@ -274,29 +298,43 @@ class RealTimeClassifierApp:
         self.predicted_image_label.pack(side=tk.LEFT, padx=10)
         self.predicted_text_label = tk.Label(self.predicted_frame, font=("Arial", 24))
         self.predicted_text_label.pack(side=tk.LEFT, padx=10)
-        # --- (Optional) Raw EEG Plot ---
+        # --- EEG Display ---
         self.eeg_fig = None
         self.eeg_ax = None
         self.eeg_canvas = None
         self.lines = []
         self.eeg_buffer = None
-        if not SIMULATOR_MODE:
-            self.eeg_fig, self.eeg_ax = plt.subplots(figsize=(8, 5))
-            self.eeg_canvas = FigureCanvasTkAgg(self.eeg_fig, master=self.master)
-            self.eeg_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-            self.buffer_size = 5000
-            self.eeg_buffer = np.zeros((NUM_CHANNELS, self.buffer_size), dtype=float)
-            offsets = np.arange(NUM_CHANNELS) * 5e4
-            xvals = np.arange(self.buffer_size)
-            for ch in range(NUM_CHANNELS):
-                line, = self.eeg_ax.plot(xvals, self.eeg_buffer[ch] + offsets[ch])
-                self.lines.append(line)
-            self.eeg_ax.set_xlim(0, self.buffer_size)
-            self.eeg_ax.set_ylim(-1e5, offsets[-1] + 1e5)
-            self.eeg_ax.set_xlabel("Samples")
-            self.eeg_ax.set_ylabel("Amplitude (shifted per channel)")
-            self.eeg_ax.set_title("EEG Channels (Most Recent Data)")
+        self.buffer_size = 5000
+        self.eeg_buffer = np.zeros((NUM_CHANNELS, self.buffer_size), dtype=float)
         self.master.after(REFRESH_INTERVAL, self.check_for_subtrial)
+
+    def toggle_eeg_display(self):
+        """Toggle the EEG display on/off"""
+        self.show_eeg = not self.show_eeg
+        if self.show_eeg:
+            self.eeg_toggle.config(text="Hide EEG")
+            if self.eeg_fig is None:
+                self.eeg_fig, self.eeg_ax = plt.subplots(figsize=(8, 5))
+                self.eeg_canvas = FigureCanvasTkAgg(self.eeg_fig, master=self.master)
+                self.eeg_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+                offsets = np.arange(NUM_CHANNELS) * 5e4
+                xvals = np.arange(self.buffer_size)
+                for ch in range(NUM_CHANNELS):
+                    line, = self.eeg_ax.plot(xvals, self.eeg_buffer[ch] + offsets[ch])
+                    self.lines.append(line)
+                self.eeg_ax.set_xlim(0, self.buffer_size)
+                self.eeg_ax.set_ylim(-1e5, offsets[-1] + 1e5)
+                self.eeg_ax.set_xlabel("Samples")
+                self.eeg_ax.set_ylabel("Amplitude (shifted per channel)")
+                self.eeg_ax.set_title("EEG Channels (Most Recent Data)")
+        else:
+            self.eeg_toggle.config(text="Show EEG")
+            if self.eeg_canvas is not None:
+                self.eeg_canvas.get_tk_widget().pack_forget()
+                self.eeg_fig = None
+                self.eeg_ax = None
+                self.eeg_canvas = None
+                self.lines = []
 
     def update_image_bars(self, probs):
         # Update the image bar extents
@@ -316,6 +354,9 @@ class RealTimeClassifierApp:
         self.predicted_text_label.config(text=f"Predicted: {self.class_labels[top_class]} (conf={conf:.2f})")
 
     def update_eeg_plot(self, new_chunk):
+        """Update the EEG plot with new data"""
+        if not self.show_eeg or self.eeg_ax is None:
+            return
         shift_amount = new_chunk.shape[1]
         self.eeg_buffer = np.roll(self.eeg_buffer, -shift_amount, axis=1)
         self.eeg_buffer[:, -shift_amount:] = new_chunk
@@ -325,6 +366,13 @@ class RealTimeClassifierApp:
             self.lines[ch].set_ydata(self.eeg_buffer[ch] + offsets[ch])
         self.eeg_fig.canvas.draw()
         self.eeg_fig.canvas.flush_events()
+
+    def stop(self):
+        """Stop the application"""
+        self.running = False
+        if SAVE_PROBABILITIES:
+            self.prob_file.close()
+        self.master.quit()
 
     def process_big_trial(self, big_arr):
         print("[DEBUG] process_big_trial => shape=", big_arr.shape)
@@ -346,37 +394,46 @@ class RealTimeClassifierApp:
             except AttributeError:
                 pred = model.predict(feats)[0]
                 probs[cls] = 1.0 if pred == 1 else 0.0
+        
+        # Save probabilities if enabled
+        if SAVE_PROBABILITIES:
+            timestamp = time.time()
+            self.prob_file.write(f"{timestamp}," + ",".join(f"{p:.4f}" for p in probs) + "\n")
+            self.prob_file.flush()  # Ensure data is written immediately
+        
         print("[DEBUG] Aggregated classification probabilities:", probs)
         return probs
 
     def check_for_subtrial(self):
+        if not self.running:  # Check if we should stop
+            return
+            
         if SIMULATOR_MODE:
             sub = generate_subtrial_sim()
             self.subtrials.append(sub)
             print(f"[DEBUG] Simulator => new sub-trial. Total collected: {len(self.subtrials)}")
+            if self.show_eeg:
+                self.update_eeg_plot(sub)
         else:
             if self.board is None or self.eeg_channels is None:
                 print("[ERROR] BrainFlow board not configured.")
-                try:
+                if self.running:
                     self.master.after(REFRESH_INTERVAL, self.check_for_subtrial)
-                except tk.TclError:
-                    pass
                 return
             c = self.board.get_board_data_count()
             print(f"[DEBUG] Board data count={c}")
             if c < SUBTRIAL_SAMPLES:
                 print("[DEBUG] Not enough data => skip.")
-                try:
+                if self.running:
                     self.master.after(REFRESH_INTERVAL, self.check_for_subtrial)
-                except tk.TclError:
-                    pass
                 return
             data = self.board.get_current_board_data(c)
             chunk = data[self.eeg_channels, -SUBTRIAL_SAMPLES:]
             self.subtrials.append(chunk)
             print(f"[DEBUG] Real board => new sub-trial. Total collected: {len(self.subtrials)}")
-            if self.eeg_ax is not None:
+            if self.show_eeg:
                 self.update_eeg_plot(chunk)
+        
         if len(self.subtrials) >= GROUP_SIZE:
             big_arr = np.concatenate(self.subtrials, axis=1)
             self.subtrials = []
@@ -386,10 +443,14 @@ class RealTimeClassifierApp:
         else:
             needed = GROUP_SIZE - len(self.subtrials)
             print(f"[DEBUG] Waiting for {needed} more sub-trials...")
-        try:
+        
+        if self.running:
             self.master.after(REFRESH_INTERVAL, self.check_for_subtrial)
-        except tk.TclError:
-            pass
+
+    def __del__(self):
+        """Cleanup when object is destroyed"""
+        if SAVE_PROBABILITIES and hasattr(self, 'prob_file'):
+            self.prob_file.close()
 
 def load_class_images(num_classes, master=None):
     # Return list of image file paths.
